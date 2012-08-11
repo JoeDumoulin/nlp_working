@@ -3,7 +3,7 @@
 from load_att_file import readchats
 from ngram_helpers import preprocess, tokenize, generate_ngrams
 from word_counts import CondFreqs, AccumCondFreqs
-from additive_smoothing import smoothed_probs, evaluate
+from additive_smoothing import AdditiveSmoothing
 from evaluation import cross_entropy
 
 if __name__ == '__main__':
@@ -13,15 +13,13 @@ if __name__ == '__main__':
   test = data[-10000:]
 
   # create a trigram model
-  cacc = {}
-  for line in train:
-    cacc = AccumCondFreqs(cacc, CondFreqs(generate_ngrams, 
-      [t for t in line], 3))
-  model = smoothed_probs(cacc)
+  a_s = AdditiveSmoothing()
+  a_s.generate_model(train)
 
   # test the trigram model
-  #for line in test[:10]:
-  #  print evaluate(3,model,line), [w for w in line]
   #compute cross entropy for these sentences
-  print cross_entropy(lambda m,s: evaluate(3,m,s), model, test)
+  print cross_entropy(a_s, test[:10])
+  print cross_entropy(a_s, test[:100])
+  print cross_entropy(a_s, test[:1000])
+  print cross_entropy(a_s, test[:10000])
 
