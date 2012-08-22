@@ -7,6 +7,8 @@ months = "(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
 substitutions = [
   # symbols and emoticons
   (re.compile(r'([\w]+)_[\s]+'), r'\1 '), # remove trailing '_'
+  (re.compile(r'_([\w]+)[\s]+'), r'\1 '), # remove leading '_'
+  #(re.compile(r'[\"]+([^\"]+)[\"]+'), r'\1 '), # remove embedded double quotes
   (re.compile(r'\s(=\)|\:\)|\: \)|\:\-\)|\:D|<3|\:>|\: >|\:\->)\s'), r' _emoticon_p_ '), # happy emoticon
   (re.compile(r'\s(=\(|\:\(|\: \(|\:\-\(|\:<)\s'), r' _emoticon_n_ '), # sad or neutral emoticons
   # contractions 
@@ -112,6 +114,12 @@ substitutions = [
 def preprocess(input):
   ''' Given an input string run all preprocessing 
   patterns on the string.
+  >>> from nltk.data import load
+  >>> sent_tok = load('tokenizers/punkt/english.pickle')
+  >>> from nltk.corpus import gutenberg as g
+  >>> sents = sent_tok.tokenize(g.raw('austen-emma.txt'))
+  >>> preprocess(sents[4])
+  'between them it was more the intimacy\\nof sisters.'
   '''
   input = input.lower()
   for (p,s) in substitutions:
@@ -120,6 +128,16 @@ def preprocess(input):
   return input
 
 def is_a_term(term):
+  ''' given a candidate term, return True if the candidate meets
+  all the criteria of a term and False if not.
+  >>> is_a_term(',')
+  False
+  >>> is_a_term('2345')
+  True
+  >>> is_a_term('hello world')
+  True
+  >>>
+  '''
   if len(term) > 0 and term[0] is ' ': print term
   if term in ['', ' ']: # spaces
     return False
@@ -134,6 +152,17 @@ def is_a_term(term):
 
 sentence_splitter = re.compile(r'(\W+)')
 def tokenize(input_string):
+  ''' given an input sentence, split the sentence 
+  into a list of terms, adding begining and end of 
+  sentence markers. return a generator to the tokens.
+  >>> from nltk.data import load
+  >>> sent_tok = load('tokenizers/punkt/english.pickle')
+  >>> from nltk.corpus import gutenberg as g
+  >>> sents = sent_tok.tokenize(g.raw('austen-emma.txt'))
+  >>> [w for w in tokenize(preprocess(sents[4]))]
+  ['<s>', 'between', 'them', 'it', 'was', 'more', 'the', 'intimacy', 'of', 'sisters', '</s>']
+  >>>
+  '''
   yield '<s>'
   for word in sentence_splitter.split(input_string):
     word = word.strip()
@@ -142,20 +171,23 @@ def tokenize(input_string):
   yield '</s>'
 
 def generate_ngrams(sentence, n):
+  ''' given a tokenized sentence and an integer,
+  generate ngrams of order n from the sentence.
+  Return a generator of the ngrams.
+  >>> from nltk.data import load
+  >>> sent_tok = load('tokenizers/punkt/english.pickle')
+  >>> from nltk.corpus import gutenberg as g
+  >>> sents = sent_tok.tokenize(g.raw('austen-emma.txt'))
+  >>> [ng for ng in generate_ngrams(tokenize(preprocess(sents[4])), 2)]
+  [['<s>', 'between'], ['between', 'them'], ['them', 'it'], ['it', 'was'], ['was', 'more'], ['more', 'the'], ['the', 'intimacy'], ['intimacy', 'of'], ['of', 'sisters'], ['sisters', '</s>']]
+  >>> 
+  '''
   words = [word for word in sentence]
   for i in range(len(words) - n + 1):
     ngram = [n_term for n_term in islice(words, i, i + n)]
     yield ngram
 
 if __name__ == '__main__':
-  #sentence = tokenize(preprocess('what is the_ flying speed of an unburdened sparrow'))
-  sentence = tokenize(preprocess('Dr. Livingston, I presume.'))
-  #sentence = tokenize('what is the_ flying speed of an unburdened sparrow')
-  for ngram in generate_ngrams(sentence , 3):
-    print ngram
-  for ngram in generate_ngrams(sentence , 2):
-    print ngram
-  for ngram in generate_ngrams(sentence , 1):
-    print ngram
-
+  import doctest
+  doctest.testmod()
   
