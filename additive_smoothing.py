@@ -3,6 +3,7 @@
 from model_smoothing import SmoothedModel
 from word_counts import CondFreqs, AccumCondFreqs
 from ngram_helpers import generate_ngrams
+from math import log
 
 class AdditiveSmoothing(SmoothedModel):
   def __init__(self, n=3):
@@ -46,6 +47,17 @@ class AdditiveSmoothing(SmoothedModel):
   def generate_model(self, train):
     ''' given a list of lists of tokenized sentences, generate and store 
     a model corresponding to this type of smoothing.
+    >>> from nltk.data import load
+    >>> stok = load('tokenizers/punkt/english.pickle')
+    >>> from nltk.corpus import gutenberg as g
+    >>> from ngram_helpers import *
+    >>> train = [tokenize(preprocess(sent)) for sent in stok.tokenize(g.raw('austen-emma.txt'))]
+    >>> from additive_smoothing import AdditiveSmoothing
+    >>> a_s = AdditiveSmoothing()
+    >>> a_s.generate_model(train)
+    >>> a_s.model[0].items()[:2]
+    [('blessed her', {'before': 0.00027991602519244227}), ('long understood', {'me': 0.00027987685418415898, 'you': 0.00027987685418415898})]
+    >>>
     '''
     cacc = {}
     for line in train:
@@ -59,17 +71,17 @@ class AdditiveSmoothing(SmoothedModel):
     '''
     SmoothedModel.evaluate(self, sentence)
     probs,V = self.model
-    p = 1.0
+    lp = 1.0
     cf =  CondFreqs(generate_ngrams, sentence, self.n)
     for prefix,suffix in cf.iteritems():
       if prefix not in probs:
-        p *= 1.0/(1.0+V)
+        lp += log(1.0/(1.0+V), 2)
       else:
         for term,count in suffix.iteritems():
           N = len(probs[prefix])
           if term in probs[prefix]:
-            p *= count * probs[prefix][term]
+            lp += count * log(probs[prefix][term], 2)
           else:
-            p *= count * (1.0/(V+N))
-    return p
+            lp += count * log((1.0/(V+N)), 2)
+    return lp
 
