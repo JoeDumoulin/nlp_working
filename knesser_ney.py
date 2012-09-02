@@ -27,9 +27,7 @@ class KnesserNey(SmoothedModel):
       condFreq = AccumCondFreqs(condFreq, CondFreqs(generate_ngrams, [w for w in sent], self.n))
     # count the number of times each prefix starts an ngram
     for p, s in condFreq.iteritems():
-      if p not in self.freq:
-        self.freq[p] = {}
-      self.freq[p] = len(s.items())
+      self.freq[p] = float(sum(s.values()))
       # continuation probability counts
       for w,c in s.iteritems():
         if w not in continuation:

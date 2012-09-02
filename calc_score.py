@@ -21,7 +21,8 @@ def get_chat(line):
 
 def test_pass(model, data, ltrain=10000, ltest=10000):
   train = data[:ltrain]
-  test = data[ltrain:ltrain+ltest]
+  #test = data[ltrain:ltrain+ltest]
+  test = data[ltest:]
   model.generate_model(train)
   return cross_entropy(model, test)
 
@@ -81,9 +82,6 @@ if __name__ == '__main__':
     print test_pass(KnesserNey(n=2), chatlines, ltrain=100000)
     print 'test Additive Smoothing bigrams using 500,000 training chats and 10,000 test chats'
     print test_pass(KnesserNey(n=2), chatlines, ltrain=500000)
-
-
-
     
 #    train = chatlines[:500000]
 #    test1 = chatlines[600000:640000]
