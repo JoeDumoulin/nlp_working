@@ -61,9 +61,9 @@ def linear_regression(list_of_tuples, fn=lambda x: x):
   >>> data_gen = [tokenize(preprocess(sent)) for sent in sents]
   >>> f_to_fof = [(i, float(len(n))) for (i,n) in freqOfFreq(bigram_freqs(data_gen))]
   >>> linear_regression(f_to_fof)
-  (0.12410288547515608, 0.97637511017792022)
+  (0.12390705875224355, 0.9763969903604447)
   >>> linear_regression(f_to_fof, log)
-  (0.33585101170630283, 0.0031407862682853744)
+  (0.3344705807030366, 0.0031418999519403803)
   >>> 
   '''
   N = 0.0
@@ -98,13 +98,14 @@ def smoothed_counts(freq, (slope, intercept)):
   >>> data_gen = [tokenize(preprocess(sent)) for sent in sents]
   >>> cf = bigram_freqs(data_gen)
   >>> fof = [(i, float(len(n))) for (i, n) in freqOfFreq(cf)]
-  >>> smoothed_counts(cf, linear_regression(fof, log)).items()[10:15]
-  [('assembled', {'on': 2.5242433700915288, 'about': 2.5242433700915288}), ('consider', {'their': 2.5242433700915288, 'my': 2.5242433700915288, 'your': 3.4376501960614041}), ('whose', {'cause': 2.5242433700915288, 'thoughts': 2.5242433700915288}), ('lory', {'and': 2.5242433700915288, '</s>': 2.5242433700915288, 'who': 2.5242433700915288, 'hastily': 2.5242433700915288, 'as': 2.5242433700915288, 'with': 2.5242433700915288, 'positively': 2.5242433700915288}), ('paris', {'and': 2.5242433700915288, 'is': 2.5242433700915288})]
+  >>> smoothed_counts(cf, linear_regression(fof, log))[0].items()[10:15]
+  [('assembled', {'on': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'about': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506)}), ('consider', {'their': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'my': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'your': (3.435726624538815, 1.2648825094317506, 1.4485968381893783)}), ('whose', {'cause': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'thoughts': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506)}), ('lory', {'and': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), '</s>': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'who': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'hastily': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'as': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'with': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'positively': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506)}), ('paris', {'and': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506), 'is': (2.5218292235379955, 1.0031468408928865, 1.2648825094317506)})]
   >>> 
   '''
   
   # rewrite the freq list with new values
   freq_rewrite = {}
+  N = 0.0
   for p,s in freq.iteritems():
     if p not in freq_rewrite:
       freq_rewrite[p] = {}
@@ -112,11 +113,33 @@ def smoothed_counts(freq, (slope, intercept)):
       N_r = exp(intercept+slope*log(r))
       N_r1 = exp(intercept+slope*log(r+1))
       r_star = (r+1)*N_r1/N_r
-      freq_rewrite[p][w] = r_star
-  return freq_rewrite
+      freq_rewrite[p][w] = (r_star, N_r, N_r1)
+      N += N_r * r_star
+  return (freq_rewrite, N)
 
 def model_probs(freq_parameters):
-  pass
+  ''' Given frequency modeling data, return model probability.
+  >>> from nltk.data import load
+  >>> from math import log
+  >>> sent_seperator = load('tokenizers/punkt/english.pickle')
+  >>> from nltk.corpus import gutenberg as g
+  >>> sents = sent_seperator.tokenize(g.raw('carroll-alice.txt'))
+  >>> from ngram_helpers import preprocess, tokenize
+  >>> data_gen = [tokenize(preprocess(sent)) for sent in sents]
+  >>> cf = bigram_freqs(data_gen)
+  >>> fof = [(i, float(len(n))) for (i, n) in freqOfFreq(cf)]
+  >>> model_probs(smoothed_counts(cf, linear_regression(fof, log)))[0].items()[10:15]
+  [('hate', {'c': 3.279103308880836e-05, 'cats': 3.279103308880836e-05}), ('assembled', {'on': 3.279103308880836e-05, 'about': 3.279103308880836e-05}), ('forget', {'to': 3.279103308880836e-05, 'them': 3.279103308880836e-05}), ('whose', {'cause': 3.279103308880836e-05, 'thoughts': 3.279103308880836e-05}), ('lory', {'and': 3.279103308880836e-05, '</s>': 3.279103308880836e-05, 'who': 3.279103308880836e-05, 'hastily': 3.279103308880836e-05, 'as': 3.279103308880836e-05, 'with': 3.279103308880836e-05, 'positively': 3.279103308880836e-05})]
+  '''
+  freqs, N = freq_parameters
+  probs = {}
+  for p,s in freqs.iteritems():
+    if p not in probs:
+      probs[p] = {}
+    for w,c in s.iteritems():
+      r, nr, nr1 = c
+      probs[p][w] = r/N
+  return (probs, N)
 
 if __name__ == '__main__':
   import doctest
