@@ -113,7 +113,7 @@ def smoothed_counts(freq, (slope, intercept)):
       N_r = exp(intercept+slope*log(r))
       N_r1 = exp(intercept+slope*log(r+1))
       r_star = (r+1)*N_r1/N_r
-      freq_rewrite[p][w] = (r_star, N_r, N_r1)
+      freq_rewrite[p][w] = (r_star, N_r, N_r1, r)
       N += N_r * r_star
   return (freq_rewrite, N)
 
@@ -133,13 +133,16 @@ def model_probs(freq_parameters):
   '''
   freqs, N = freq_parameters
   probs = {}
+  single_count_prob = 1.0
   for p,s in freqs.iteritems():
     if p not in probs:
       probs[p] = {}
     for w,c in s.iteritems():
-      r, nr, nr1 = c
+      r_star, nr, nr1, r = c
       probs[p][w] = r/N
-  return (probs, N)
+      if probs[p][w] < single_count_prob:
+        single_count_prob = probs[p][w]
+  return (probs, single_count_prob)
 
 if __name__ == '__main__':
   import doctest
