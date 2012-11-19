@@ -4,6 +4,7 @@ from load_att_file import readchats
 from ngram_helpers import preprocess, tokenize
 from additive_smoothing import AdditiveSmoothing
 from knesser_ney import KnesserNey
+from katz_smoothing import KatzSmoothing
 from gt_smoothing import SimpleGoodTuring
 from evaluation import cross_entropy
 from load_att_file import readchats
@@ -49,28 +50,34 @@ def test_austen():
   model1.generate_model(train)
   print 'cross entropy additive smoothing:'
   print 'emma to sense&sensibility: %f0.8' %cross_entropy(model1, test1)
-  print 'emma to persuation: %f0.8' %cross_entropy(model1, test2)
+  print 'emma to persuasion: %f0.8' %cross_entropy(model1, test2)
   model2 = KnesserNey(n=2)
   model2.generate_model(train)
   print 'cross entropy knesser-ney smoothing:'
   print 'emma to sense&sensibility: %f0.8' %cross_entropy(model2, test1)
-  print 'emma to persuation: %f0.8' %cross_entropy(model2, test2)
+  print 'emma to persuasion: %f0.8' %cross_entropy(model2, test2)
   model3 = SimpleGoodTuring(n=2)
   model3.generate_model(train)
   print 'cross entropy simple good-turing smoothing:'
   print 'emma to sense&sensibility: %f0.8' %cross_entropy(model3, test1)
-  print 'emma to persuation: %f0.8' %cross_entropy(model3, test2)
+  print 'emma to persuasion: %f0.8' %cross_entropy(model3, test2)
+
+  model4 = KatzSmoothing(n=2)
+  model4.generate_model(train)
+  print 'cross entropy katz smoothing:'
+  print 'emma to sense&sensibility: %f0.8' %cross_entropy(model4, test1)
+  print 'emma to persuasion: %f0.8' %cross_entropy(model4, test2)
 
 def test_model(model, data):
   print '%d chats retrieved' % len(chatlines)
-  print 'test Additive Smoothing bigrams using 10,000 training chats and 10,000 test chats'
+  print 'test bigrams using 10,000 training chats and 10,000 test chats'
   print test_pass(model, data)
-  print 'test Additive Smoothing bigrams using 50,000 training chats and 10,000 test chats'
-  print test_pass(model, data, ltrain=50000)
-  print 'test Additive Smoothing bigrams using 100,000 training chats and 10,000 test chats'
-  print test_pass(model, data, ltrain=100000)
-  print 'test Additive Smoothing bigrams using 500,000 training chats and 10,000 test chats'
-  print test_pass(model, data, ltrain=500000)
+  #print 'test bigrams using 50,000 training chats and 10,000 test chats'
+#print test_pass(model, data, ltrain=50000)
+  #  print 'test Additive Smoothing bigrams using 100,000 training chats and 10,000 test chats'
+  #print test_pass(model, data, ltrain=100000)
+  #print 'test Additive Smoothing bigrams using 500,000 training chats and 10,000 test chats'
+#print test_pass(model, data, ltrain=500000)
 
 def generate_coChats():
   with open('filterchats/Res3.csv', 'r') as f:
@@ -85,7 +92,10 @@ def generate_coChats():
 if __name__ == '__main__':
   chatlines = [line for line in  generate_chatlines('coChats.txt')]
 
-  #test_model(AdditiveSmoothing(n=2), chatlines)
+  #  test_model(AdditiveSmoothing(n=2), chatlines)
   #test_model(KnesserNey(n=2), chatlines)
+#  test_model(SimpleGoodTuring(n=2), chatlines)
+  #test_model(KatzSmoothing(n=2), chatlines)
+
   test_austen()
  

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from math import log,exp
+from math import log,exp,sqrt
 from operator import itemgetter, mul
 from ngram_helpers import generate_ngrams
 from word_counts import Freqs, AccumFreqs, CondFreqs, AccumCondFreqs
@@ -82,6 +82,40 @@ def linear_regression(list_of_tuples, fn=lambda x: x):
   slope = (N*x_y - x*y)/(N*x_2 - x*x)
   intercept = (y - slope*x)/N
   return (slope,intercept)
+
+def linear_regression2(list_of_tuples, fn=lambda x: x):
+  ''' This gives exactly the same result as linear_regression above
+  '''
+  sumX = 0.0
+  sumY = 0.0
+  sumXX = 0.0
+  sumXY = 0.0
+  sumYY = 0.0
+  N = 0.0
+  for x, y in list_of_tuples:
+    N += y
+    fnx = fn(x)
+    fny = fn(y)
+    sumX += fnx
+    sumY += fny
+    sumXX += fnx*fnx
+    sumXY += fnx*fny
+    sumYY += fny*fny
+
+  denom = sqrt((sumXX-1/N*sumX**2)*(sumYY-1/N*sumY**2))
+  if denom < 9e-7:
+    #underflow: throw an error
+    raise ZeroDivisionError
+  r = (sumXY - 1/N * sumX * sumY)/denom
+  if abs(r) < 9e-7:
+    # no correlation between x and y
+    return (1.0, 1.0)
+  slope = sumXY-sumX*sumY/N
+  slope /= (sumXX - sumX**2/N)
+  intercept = sumY - slope*sumX
+  intercept /= N
+  print slope, intercept
+  return slope, intercept
 
 def smoothed_counts(freq, (slope, intercept)):
   ''' for each ngram in freq, determine r* = (r+1)*n_r_+_1/n_r 
